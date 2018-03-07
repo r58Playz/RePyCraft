@@ -7,6 +7,13 @@ from pyglet.gl import *
 from pyglet.window import key
 from pyglet.window import mouse
 
+#Moitié de la taille du monde
+from scipy.linalg._expm_frechet import vec
+
+WORLD_SIZE = 100
+HILL_PROB = 50
+HILL_MAX_SIZE = 30
+
 class Model:
     def get_tex(self,file):
         tex = pyglet.image.load(file).texture
@@ -35,11 +42,26 @@ class Model:
         self.textures['dirt']['top'] = self.get_tex('resources/textures/blocks/dirt.png')
         self.textures['dirt']['bottom'] = self.get_tex('resources/textures/blocks/dirt.png')
         self.textures['dirt']['side'] = self.get_tex('resources/textures/blocks/dirt.png')
+        #Log Acacia
+        self.textures['logAcacia'] = {}
+        self.textures['logAcacia']['top'] = self.get_tex('resources/textures/blocks/log_acacia.png')
+        self.textures['logAcacia']['bottom'] = self.get_tex('resources/textures/blocks/log_acacia.png')
+        self.textures['logAcacia']['side'] = self.get_tex('resources/textures/blocks/log_acacia.png')
+        #Log Big Oak
+        self.textures['logBigOak'] = {}
+        self.textures['logBigOak']['top'] = self.get_tex('resources/textures/blocks/log_big_oak.png')
+        self.textures['logBigOak']['bottom'] = self.get_tex('resources/textures/blocks/log_big_oak.png')
+        self.textures['logBigOak']['side'] = self.get_tex('resources/textures/blocks/log_big_oak.png')
+        #Leaves Big Oak
+        self.textures['leavesBigOak'] = {}
+        self.textures['leavesBigOak']['top'] = self.get_tex('resources/textures/blocks/leaves_big_oak.png')
+        self.textures['leavesBigOak']['bottom'] = self.get_tex('resources/textures/blocks/leaves_big_oak.png')
+        self.textures['leavesBigOak']['side'] = self.get_tex('resources/textures/blocks/leaves_big_oak.png')
 
         self.batch = pyglet.graphics.Batch()
 
-        #Moitié de la taille du monde
-        n = 100
+        #Génération du sol
+        n = WORLD_SIZE
         y = 0
         for x in range(-n, n + 1, 1):
             for z in range(-n, n + 1, 1):
@@ -47,6 +69,43 @@ class Model:
                 self.addBlock(x, y-3, z, 'dirt')
                 self.addBlock(x, y-4, z, 'stone')
                 self.addBlock(x, y-5, z, 'stone')
+
+        #Génération de collines
+        o = WORLD_SIZE - HILL_MAX_SIZE
+        for _ in range(HILL_PROB):
+            #Position de la colline
+            xHill = random.randint(-o,o)
+            zHill = random.randint(-o,o)
+            yHill = -1
+            #Hauteur et largeur
+            hHill = random.randint(1,HILL_MAX_SIZE)
+            sHill = random.randint(4,8)
+            d = 1
+            for y in range(yHill, yHill + hHill):
+                for x in range(xHill - sHill, xHill + sHill + 1):
+                    for z in range(zHill - sHill, zHill + sHill + 1):
+                        if (x - xHill) ** 2 + (z - zHill) ** 2 > (sHill + 1) ** 2:
+                            continue
+                        if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
+                            continue
+                        self.addBlock(x, y, z, 'grass')
+                #Décremente petit à petit la largeur afin de créer une forme pyramidale
+                sHill -= d
+
+        #Génération d'arbres
+        self.addBlock(10, -1, 10, 'logBigOak')
+        self.addBlock(10, 0, 10, 'logBigOak')
+        self.addBlock(10, 1, 10, 'logBigOak')
+        for y in range(2,6):
+            self.addBlock(9, y, 9, 'leavesBigOak')
+            self.addBlock(9, y, 10, 'leavesBigOak')
+            self.addBlock(9, y, 11, 'leavesBigOak')
+            self.addBlock(10, y, 9, 'leavesBigOak')
+            self.addBlock(10, y, 10, 'leavesBigOak')
+            self.addBlock(10, y, 11, 'leavesBigOak')
+            self.addBlock(11, y, 9, 'leavesBigOak')
+            self.addBlock(11, y, 10, 'leavesBigOak')
+            self.addBlock(11, y, 11, 'leavesBigOak')
 
     def draw(self):
         self.batch.draw()
