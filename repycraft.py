@@ -8,11 +8,12 @@ from pyglet.window import key
 from pyglet.window import mouse
 
 #Moitié de la taille du monde
-from scipy.linalg._expm_frechet import vec
+WORLD_SIZE = 25
+HILL_PROB = 5
+TREE_PROB = 15
+HILL_MAX_SIZE = 10
 
-WORLD_SIZE = 100
-HILL_PROB = 50
-HILL_MAX_SIZE = 30
+world = {}
 
 class Model:
     def get_tex(self,file):
@@ -47,16 +48,21 @@ class Model:
         self.textures['logAcacia']['top'] = self.get_tex('resources/textures/blocks/log_acacia.png')
         self.textures['logAcacia']['bottom'] = self.get_tex('resources/textures/blocks/log_acacia.png')
         self.textures['logAcacia']['side'] = self.get_tex('resources/textures/blocks/log_acacia.png')
-        #Log Big Oak
-        self.textures['logBigOak'] = {}
-        self.textures['logBigOak']['top'] = self.get_tex('resources/textures/blocks/log_big_oak.png')
-        self.textures['logBigOak']['bottom'] = self.get_tex('resources/textures/blocks/log_big_oak.png')
-        self.textures['logBigOak']['side'] = self.get_tex('resources/textures/blocks/log_big_oak.png')
-        #Leaves Big Oak
-        self.textures['leavesBigOak'] = {}
-        self.textures['leavesBigOak']['top'] = self.get_tex('resources/textures/blocks/leaves_big_oak.png')
-        self.textures['leavesBigOak']['bottom'] = self.get_tex('resources/textures/blocks/leaves_big_oak.png')
-        self.textures['leavesBigOak']['side'] = self.get_tex('resources/textures/blocks/leaves_big_oak.png')
+        # Leaves Acacia
+        self.textures['leavesAcacia'] = {}
+        self.textures['leavesAcacia']['top'] = self.get_tex('resources/textures/blocks/leaves_acacia.png')
+        self.textures['leavesAcacia']['bottom'] = self.get_tex('resources/textures/blocks/leaves_acacia.png')
+        self.textures['leavesAcacia']['side'] = self.get_tex('resources/textures/blocks/leaves_acacia.png')
+        #Log Oak
+        self.textures['logOak'] = {}
+        self.textures['logOak']['top'] = self.get_tex('resources/textures/blocks/log_oak.png')
+        self.textures['logOak']['bottom'] = self.get_tex('resources/textures/blocks/log_oak.png')
+        self.textures['logOak']['side'] = self.get_tex('resources/textures/blocks/log_oak.png')
+        #Leaves Oak
+        self.textures['leavesOak'] = {}
+        self.textures['leavesOak']['top'] = self.get_tex('resources/textures/blocks/leaves_oak.png')
+        self.textures['leavesOak']['bottom'] = self.get_tex('resources/textures/blocks/leaves_oak.png')
+        self.textures['leavesOak']['side'] = self.get_tex('resources/textures/blocks/leaves_oak.png')
 
         self.batch = pyglet.graphics.Batch()
 
@@ -65,10 +71,10 @@ class Model:
         y = 0
         for x in range(-n, n + 1, 1):
             for z in range(-n, n + 1, 1):
-                self.addBlock(x, y-2, z, 'grass')
-                self.addBlock(x, y-3, z, 'dirt')
-                self.addBlock(x, y-4, z, 'stone')
-                self.addBlock(x, y-5, z, 'stone')
+                self.addBlock((x, y, z), 'grass')
+                self.addBlock((x, y-1, z), 'dirt')
+                self.addBlock((x, y-2, z), 'stone')
+                self.addBlock((x, y-3, z), 'stone')
 
         #Génération de collines
         o = WORLD_SIZE - HILL_MAX_SIZE
@@ -88,29 +94,57 @@ class Model:
                             continue
                         if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
                             continue
-                        self.addBlock(x, y, z, 'grass')
+                        self.addBlock((x, y, z), 'grass')
                 #Décremente petit à petit la largeur afin de créer une forme pyramidale
                 sHill -= d
 
         #Génération d'arbres
-        self.addBlock(10, -1, 10, 'logBigOak')
-        self.addBlock(10, 0, 10, 'logBigOak')
-        self.addBlock(10, 1, 10, 'logBigOak')
-        for y in range(2,6):
-            self.addBlock(9, y, 9, 'leavesBigOak')
-            self.addBlock(9, y, 10, 'leavesBigOak')
-            self.addBlock(9, y, 11, 'leavesBigOak')
-            self.addBlock(10, y, 9, 'leavesBigOak')
-            self.addBlock(10, y, 10, 'leavesBigOak')
-            self.addBlock(10, y, 11, 'leavesBigOak')
-            self.addBlock(11, y, 9, 'leavesBigOak')
-            self.addBlock(11, y, 10, 'leavesBigOak')
-            self.addBlock(11, y, 11, 'leavesBigOak')
+        for _ in range(TREE_PROB):
+            xTree = random.randint(-WORLD_SIZE, WORLD_SIZE)
+            zTree = random.randint(-WORLD_SIZE, WORLD_SIZE)
+            self.addTree((xTree,0,zTree),'oak')
 
     def draw(self):
         self.batch.draw()
 
-    def addBlock(self, x, y , z, type):
+    def addHill(self,position,type):
+        print()
+
+    def addTree(self,position,type):
+        """
+            Ajoute un arbre à la position passée en paramètre
+            Parameters:
+            position: tuple (x,y,z) contenant la position de l'arbre à ajouter
+            type: le type de l'arbre (e.g. oak, acacia, etc.)
+        """
+        x, y, z = position
+        size = random.randint(3,7)
+        for sizeTrunc in range(0,size):
+            self.addBlock((x, sizeTrunc-1, z), 'logOak')
+        for y in range(size-1, size*2):
+            self.addBlock((x-1, y, z-1), 'leavesOak')
+            self.addBlock((x-1, y, z), 'leavesOak')
+            self.addBlock((x-1, y, z+1), 'leavesOak')
+            self.addBlock((x, y, z-1), 'leavesOak')
+            self.addBlock((x, y, z), 'leavesOak')
+            self.addBlock((x, y, z+1), 'leavesOak')
+            self.addBlock((x+1, y, z-1), 'leavesOak')
+            self.addBlock((x+1, y, z), 'leavesOak')
+            self.addBlock((x+1, y, z+1), 'leavesOak')
+
+    def addBlock(self, position, type):
+        """
+            Ajoute un bloc à la position passée en paramètre
+            Parameters:
+            position: tuple (x,y,z) contenant la position du bloc à ajouter
+            type: le type du bloc (e.g. grass, stone, etc.)
+        """
+        #Ajout du bloc dans la map du monde
+        if position in self.world:
+            self.removeBlock(position)
+        self.world[position] = type
+        #Création des vertex associés au bloc
+        x, y, z = position
         X, Y, Z = x + 1, y + 1, z + 1
         texCoords = ('t2f', (0, 0, 1, 0, 1, 1, 0, 1,))
         self.batch.add(4, GL_QUADS, self.textures[type]['side'], ('v3f', (x, y, z, x, y, Z, x, Y, Z, x, Y, z,)), texCoords)
@@ -119,6 +153,14 @@ class Model:
         self.batch.add(4, GL_QUADS, self.textures[type]['top'], ('v3f', (x, Y, Z, X, Y, Z, X, Y, z, x, Y, z,)), texCoords)
         self.batch.add(4, GL_QUADS, self.textures[type]['side'], ('v3f', (X, y, z, x, y, z, x, Y, z, X, Y, z,)), texCoords)
         self.batch.add(4, GL_QUADS, self.textures[type]['side'], ('v3f', (x, y, Z, X, y, Z, X, Y, Z, x, Y, Z,)), texCoords)
+
+    def removeBlock(self, position):
+        """
+        Supprime le bloc situé à la position donnée en paramètre
+        Parameters:
+            position: tuple (x,y,z) contenant la position du bloc à supprimer
+        """
+        del self.world[position]
 
 class Player:
     def __init__(self,pos=(0,0,0),rot=(0,0)):
@@ -173,7 +215,7 @@ class Window(pyglet.window.Window):
 
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        self.set_minimum_size(300,200)
+        self.set_minimum_size(854,480)
         cursor = self.get_system_mouse_cursor(self.CURSOR_CROSSHAIR)
         self.set_mouse_cursor(cursor)
         #Permet de stocker l'état courant du clavier (accessible comme un dictionnaire)
@@ -216,11 +258,11 @@ class Window(pyglet.window.Window):
         self.push(self.player.pos, self.player.rot)
         self.model.draw()
         # Display FPS
-        self.fpsDisplay.draw()
+        #self.fpsDisplay.draw()
         glPopMatrix()
 
 if __name__ == '__main__':
-    window = Window(width=854, height=480, caption='RePyCraft', resizable=True)
+    window = Window(width=1708, height=960, caption='RePyCraft', resizable=True)
     glClearColor(0.5,0.7,1,1)
     glEnable(GL_DEPTH_TEST)
     pyglet.app.run()
